@@ -1,0 +1,31 @@
+{
+  "action": "created",
+  "issue": {
+    "number": 1,
+    "title": "Test issue",
+    "body": "This is a test issue",
+    "user": {
+      "login": "hiimbex"
+    }
+  },
+  "comment": {
+    "id": 1,
+    "body": "@mollusk-bot please add a README file",
+    "user": {
+      "login": "hiimbex"
+    }
+  },
+  "repository": {
+    "name": "testing-things",
+    "owner": {
+      "login": "hiimbex"
+    }
+  },
+  "sender": {
+    "login": "hiimbex",
+    "type": "User"
+  },
+  "installation": {
+    "id": 2
+  }
+}
