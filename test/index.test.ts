@@ -1,10 +1,24 @@
 import nock from "nock";
-import myProbotApp from "../src/index.js";
 import { Probot, ProbotOctokit } from "probot";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { describe, beforeEach, afterEach, test, expect } from "vitest";
+import { describe, beforeEach, afterEach, test, expect, vi } from "vitest";
+
+vi.mock("../src/queue/queues.js", () => {
+  const mockAdd = vi.fn().mockResolvedValue({});
+  return {
+    getAgentQueue: vi.fn(() => ({ add: mockAdd })),
+  };
+});
+
+vi.mock("../src/queue/worker.js", () => ({
+  startWorker: vi.fn(),
+}));
+
+// Must import after mocks are declared
+const { default: myProbotApp } = await import("../src/index.js");
+const { getAgentQueue } = await import("../src/queue/queues.js");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -71,6 +85,19 @@ describe("mollusk", () => {
       payload: issueCommentPayload,
     });
     expect(mock.pendingMocks()).toStrictEqual([]);
+
+    const mockAdd = getAgentQueue().add as ReturnType<typeof vi.fn>;
+    expect(mockAdd).toHaveBeenCalledWith(
+      "hiimbex/testing-things#1",
+      {
+        owner: "hiimbex",
+        repo: "testing-things",
+        issueNumber: 1,
+        sender: "hiimbex",
+        prompt: "please add a README file",
+        installationId: 2,
+      },
+    );
   });
 
   test("ignores issue comments that do not mention the bot", async () => {

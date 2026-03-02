@@ -2,6 +2,8 @@ import type { Probot } from "probot";
 import { getConfig } from "../config.js";
 import { parseMention } from "./parse.js";
 import { postAcknowledgment } from "../github/comments.js";
+import { getAgentQueue } from "../queue/queues.js";
+import type { AgentJobData } from "../queue/jobs.js";
 
 export function registerHandlers(app: Probot): void {
   app.on("issues.opened", async (context) => {
@@ -56,6 +58,23 @@ export function registerHandlers(app: Probot): void {
 
     await postAcknowledgment(context, mention.sender, mention.prompt);
 
-    // In Phase 2, this is where we'll enqueue the job
+    const jobData: AgentJobData = {
+      owner: mention.owner,
+      repo: mention.repo,
+      issueNumber: mention.issueNumber,
+      sender: mention.sender,
+      prompt: mention.prompt,
+      installationId: context.payload.installation?.id ?? 0,
+    };
+
+    try {
+      await getAgentQueue().add(
+        `${jobData.owner}/${jobData.repo}#${jobData.issueNumber}`,
+        jobData,
+      );
+      context.log.info({ jobData }, "Enqueued agent job");
+    } catch (err) {
+      context.log.error({ err }, "Failed to enqueue agent job");
+    }
   });
 }

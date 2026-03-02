@@ -1,5 +1,6 @@
 export interface Config {
   botUsername: string;
+  redisUrl: string;
 }
 
 let _config: Config | null = null;
@@ -12,6 +13,8 @@ export function getConfig(): Config {
     throw new Error("BOT_USERNAME environment variable is required");
   }
 
-  _config = { botUsername };
+  const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+
+  _config = { botUsername, redisUrl };
   return _config;
 }
