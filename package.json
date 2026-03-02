@@ -18,7 +18,8 @@
   },
   "dependencies": {
     "bullmq": "^5.70.1",
-    "probot": "^13.4.5"
+    "probot": "^13.4.5",
+    "simple-git": "^3.32.3"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

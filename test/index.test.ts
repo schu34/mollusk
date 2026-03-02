@@ -16,6 +16,23 @@ vi.mock("../src/queue/worker.js", () => ({
   startWorker: vi.fn(),
 }));
 
+vi.mock("../src/github/auth.js", () => ({
+  getInstallationToken: vi.fn().mockResolvedValue("fake-token"),
+}));
+
+vi.mock("../src/git/workspace.js", () => ({
+  createWorkspace: vi.fn().mockResolvedValue("/tmp/fake-workspace"),
+  cleanupWorkspace: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../src/git/operations.js", () => ({
+  buildCloneUrl: vi.fn().mockReturnValue("https://fake-url"),
+  generateBranchName: vi.fn().mockReturnValue("mollusk/issue-1-abc123"),
+  cloneRepo: vi.fn().mockResolvedValue({}),
+  createBranch: vi.fn().mockResolvedValue(undefined),
+  commitAndPush: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Must import after mocks are declared
 const { default: myProbotApp } = await import("../src/index.js");
 const { getAgentQueue } = await import("../src/queue/queues.js");

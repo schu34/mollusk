@@ -1,6 +1,9 @@
+import os from "os";
+
 export interface Config {
   botUsername: string;
   redisUrl: string;
+  workspaceBaseDir: string;
 }
 
 let _config: Config | null = null;
@@ -14,7 +17,8 @@ export function getConfig(): Config {
   }
 
   const redisUrl = process.env.REDIS_URL || "redis://localhost:6379";
+  const workspaceBaseDir = process.env.WORKSPACE_BASE_DIR || os.tmpdir();
 
-  _config = { botUsername, redisUrl };
+  _config = { botUsername, redisUrl, workspaceBaseDir };
   return _config;
 }
