@@ -16,6 +16,14 @@ vi.mock("../src/queue/worker.js", () => ({
   startWorker: vi.fn(),
 }));
 
+vi.mock("../src/app.js", () => {
+  let _app: any = null;
+  return {
+    initApp: vi.fn((app: any) => { _app = app; }),
+    getApp: vi.fn(() => _app),
+  };
+});
+
 vi.mock("../src/github/auth.js", () => ({
   getInstallationToken: vi.fn().mockResolvedValue("fake-token"),
 }));
@@ -31,6 +39,28 @@ vi.mock("../src/git/operations.js", () => ({
   cloneRepo: vi.fn().mockResolvedValue({}),
   createBranch: vi.fn().mockResolvedValue(undefined),
   commitAndPush: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../src/agent/context.js", () => ({
+  fetchIssueContext: vi.fn().mockResolvedValue({
+    title: "Test issue",
+    body: "Test body",
+    comments: [],
+  }),
+  buildAgentPrompt: vi.fn().mockReturnValue("test prompt"),
+}));
+
+vi.mock("../src/agent/runner.js", () => ({
+  runAgent: vi.fn().mockResolvedValue({ success: true, output: "done" }),
+}));
+
+vi.mock("../src/github/pulls.js", () => ({
+  createPullRequest: vi.fn().mockResolvedValue({
+    prNumber: 1,
+    prUrl: "https://github.com/test/test/pull/1",
+  }),
+  buildPRTitle: vi.fn().mockReturnValue("Test (#1)"),
+  buildPRBody: vi.fn().mockReturnValue("Closes #1"),
 }));
 
 // Must import after mocks are declared

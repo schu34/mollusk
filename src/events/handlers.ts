@@ -1,11 +1,13 @@
-import type { Probot } from "probot";
 import { getConfig } from "../config.js";
+import { getApp } from "../app.js";
 import { parseMention } from "./parse.js";
 import { postAcknowledgment } from "../github/comments.js";
 import { getAgentQueue } from "../queue/queues.js";
 import type { AgentJobData } from "../queue/jobs.js";
 
-export function registerHandlers(app: Probot): void {
+export function registerHandlers(): void {
+  const app = getApp();
+
   app.on("issues.opened", async (context) => {
     context.log.info(
       { issue: context.payload.issue.number, repository: context.payload.repository.full_name },
