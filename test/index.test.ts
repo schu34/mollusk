@@ -16,6 +16,14 @@ vi.mock("../src/queue/worker.js", () => ({
   startWorker: vi.fn(),
 }));
 
+vi.mock("../src/app.js", () => {
+  let _app: any = null;
+  return {
+    initApp: vi.fn((app: any) => { _app = app; }),
+    getApp: vi.fn(() => _app),
+  };
+});
+
 vi.mock("../src/github/auth.js", () => ({
   getInstallationToken: vi.fn().mockResolvedValue("fake-token"),
 }));

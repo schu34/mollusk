@@ -1,9 +1,9 @@
-import type { Probot } from "probot";
+import { getApp } from "../app.js";
 
 export async function getInstallationToken(
-  app: Probot,
   installationId: number,
 ): Promise<string> {
+  const app = getApp();
   const octokit = await app.auth(installationId);
   const { token } = (await octokit.auth({ type: "installation" })) as {
     token: string;

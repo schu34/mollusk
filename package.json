@@ -14,10 +14,13 @@
   "scripts": {
     "build": "tsc",
     "start": "probot run ./lib/index.js",
-    "dev": "tsc && probot run ./lib/index.js",
-    "test": "vitest"
+    "dev": "tsc && LOG_LEVEL=trace probot run ./lib/index.js",
+    "dev:debug": "tsc && LOG_LEVEL=trace node --inspect ./node_modules/.bin/probot run ./lib/index.js",
+    "test": "tsc && vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.2.71",
     "bullmq": "^5.70.1",
     "probot": "^13.4.5",
     "simple-git": "^3.32.3"

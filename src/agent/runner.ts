@@ -1,47 +1,80 @@
-import { execFile } from "node:child_process";
+import { query } from "@anthropic-ai/claude-agent-sdk";
+import { createWriteStream, mkdtempSync } from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { getConfig } from "../config.js";
+import { getApp } from "../app.js";
 
 export interface AgentResult {
   success: boolean;
   output?: string;
   error?: string;
+  logFile?: string;
 }
 
-export function runAgent(
+export async function runAgent(
   prompt: string,
-  workspacePath: string,
+  workspacePath: string
 ): Promise<AgentResult> {
   const { agentTimeout } = getConfig();
 
-  return new Promise((resolve) => {
-    execFile(
-      "claude",
-      ["-p", prompt],
-      {
+  const app = getApp();
+  app.log.info("Running agent with prompt: " + prompt);
+
+  const logDir = mkdtempSync(path.join(os.tmpdir(), "mollusk-agent-log-"));
+  const logFile = path.join(logDir, "agent.log");
+  const logStream = createWriteStream(logFile);
+
+  const abortController = new AbortController();
+  const timer = setTimeout(() => abortController.abort(), agentTimeout);
+
+  try {
+    let resultText = "";
+
+    for await (const message of query({
+      prompt,
+      options: {
         cwd: workspacePath,
-        timeout: agentTimeout,
-        maxBuffer: 10 * 1024 * 1024,
+        allowedTools: ["Read", "Write", "Edit", "Bash", "Glob", "Grep"],
+        permissionMode: "bypassPermissions",
+        allowDangerouslySkipPermissions: true,
+        maxTurns: 200,
+        abortController,
       },
-      (error, stdout, stderr) => {
-        if (!error) {
-          resolve({ success: true, output: stdout });
-          return;
-        }
+    })) {
+      logStream.write(JSON.stringify(message) + "\n");
 
-        if (error.killed) {
-          resolve({
-            success: false,
-            error: `Agent timed out after ${agentTimeout / 1000}s`,
-          });
-          return;
-        }
+      if ("result" in message) {
+        resultText = message.result;
+      }
+    }
 
-        resolve({
-          success: false,
-          output: stdout || undefined,
-          error: stderr || error.message,
-        });
-      },
-    );
-  });
+    clearTimeout(timer);
+    logStream.end();
+
+    app.log.info("Agent output:\n" + resultText);
+
+    return { success: true, output: resultText, logFile };
+  } catch (err: unknown) {
+    clearTimeout(timer);
+    logStream.end();
+
+    if (abortController.signal.aborted) {
+      return {
+        success: false,
+        error: `Agent timed out after ${agentTimeout / 1000}s`,
+        logFile,
+      };
+    }
+
+    const errorMessage =
+      err instanceof Error ? err.message : String(err);
+    app.log.error("Agent error: " + errorMessage);
+
+    return {
+      success: false,
+      error: errorMessage,
+      logFile,
+    };
+  }
 }

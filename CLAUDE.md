@@ -45,7 +45,10 @@ GitHub Webhook → Event Router → Agent Orchestrator → Git Operations → Gi
 ```bash
 npm run build        # Compile TS → lib/
 npm start            # Run compiled via probot
-npm test             # Vitest
+npm run dev          # Build + run with verbose logging
+npm run dev:debug    # Build + run with Node inspector (attach on port 9229)
+npm test             # Build + run tests once
+npm run test:watch   # Run tests in watch mode
 ```
 
 ## Project Structure
