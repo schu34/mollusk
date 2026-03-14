@@ -2,9 +2,14 @@
   "action": "opened",
   "issue": {
     "number": 1,
+    "body": "@mollusk-bot please add a README file",
     "user": {
       "login": "hiimbex"
     }
+  },
+  "sender": {
+    "login": "hiimbex",
+    "type": "User"
   },
   "repository": {
     "name": "testing-things",

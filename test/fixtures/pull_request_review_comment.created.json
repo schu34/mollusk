@@ -1,0 +1,32 @@
+{
+  "action": "created",
+  "comment": {
+    "id": 1,
+    "body": "@mollusk-bot please fix the typo on line 5",
+    "user": {
+      "login": "reviewer1"
+    },
+    "path": "src/index.ts",
+    "line": 5
+  },
+  "pull_request": {
+    "number": 42,
+    "title": "Add README file",
+    "head": {
+      "ref": "mollusk/issue-1-abc123"
+    }
+  },
+  "repository": {
+    "name": "testing-things",
+    "owner": {
+      "login": "hiimbex"
+    }
+  },
+  "sender": {
+    "login": "reviewer1",
+    "type": "User"
+  },
+  "installation": {
+    "id": 2
+  }
+}

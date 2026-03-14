@@ -23,15 +23,13 @@ export function parseMention(
   repo: string,
   issueNumber: number,
 ): ParsedMention | null {
-  const mentionPattern = new RegExp(`@${escapeRegExp(botUsername)}\\b`, "i");
+  const mentionPattern = new RegExp(`@${escapeRegExp(botUsername)}(?![\\w-])`, "i");
   const match = mentionPattern.exec(body);
 
   if (!match) return null;
 
   // Extract the prompt: everything after the @mention, trimmed
   const prompt = body.slice(match.index + match[0].length).trim();
-
-  if (!prompt) return null;
 
   return { prompt, sender, owner, repo, issueNumber };
 }

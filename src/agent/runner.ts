@@ -12,6 +12,37 @@ export interface AgentResult {
   logFile?: string;
 }
 
+const ALLOWED_BASH_COMMANDS = new Set([
+  // Build / runtime
+  "npm", "npx", "node", "tsc", "prettier", "eslint",
+  // File operations
+  "ls", "cat", "mkdir", "cp", "mv", "rm", "touch", "chmod",
+  "head", "tail", "wc", "sort", "uniq", "diff", "tee",
+  // Search / text processing
+  "grep", "find", "sed", "awk", "xargs", "tr", "cut",
+  // Shell basics
+  "echo", "printf", "env", "pwd", "which", "test", "true", "false",
+  "cd", "export", "set",
+]);
+
+export function extractBaseCommand(command: string): string {
+  // Strip leading env vars (FOO=bar cmd), subshell parens, semicolons
+  const stripped = command.trimStart().replace(/^(\w+=\S*\s+)*/, "");
+  // Get the first token
+  const match = stripped.match(/^[("']*([a-zA-Z0-9_./-]+)/);
+  return match ? path.basename(match[1]) : "";
+}
+
+export function isCommandAllowed(command: string): boolean {
+  // Split on pipes, &&, ||, ; to check each sub-command
+  const subCommands = command.split(/\s*(?:\|+|&&|\|\||;)\s*/);
+  return subCommands.every((sub) => {
+    const base = extractBaseCommand(sub.trim());
+    if (!base) return true; // empty segment (trailing pipe, etc.)
+    return ALLOWED_BASH_COMMANDS.has(base);
+  });
+}
+
 export async function runAgent(
   prompt: string,
   workspacePath: string
@@ -40,6 +71,28 @@ export async function runAgent(
         allowDangerouslySkipPermissions: true,
         maxTurns: 200,
         abortController,
+        canUseTool: async (toolName, input) => {
+          if (toolName !== "Bash") {
+            return { behavior: "allow" as const };
+          }
+
+          const command = (input as { command?: string }).command ?? "";
+          if (isCommandAllowed(command)) {
+            return { behavior: "allow" as const };
+          }
+
+          const base = extractBaseCommand(command);
+          app.log.error(
+            { command, blockedCommand: base },
+            "Agent Bash command blocked by allowlist: %s",
+            base,
+          );
+
+          return {
+            behavior: "deny" as const,
+            message: `Command "${base}" is not in the allowed commands list. Allowed: ${[...ALLOWED_BASH_COMMANDS].join(", ")}`,
+          };
+        },
       },
     })) {
       logStream.write(JSON.stringify(message) + "\n");

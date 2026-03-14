@@ -23,6 +23,13 @@ export async function cloneRepo(
   return simpleGit(workspacePath);
 }
 
+export async function checkoutBranch(
+  git: SimpleGit,
+  branchName: string,
+): Promise<void> {
+  await git.checkout(branchName);
+}
+
 export async function createBranch(
   git: SimpleGit,
   branchName: string,
