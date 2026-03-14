@@ -40,7 +40,7 @@ describe("parseMention", () => {
     expect(result).toBeNull();
   });
 
-  test("returns null when mention has no prompt", () => {
+  test("returns match with empty prompt when comment is just the mention", () => {
     const result = parseMention(
       "@mollusk-bot",
       "mollusk-bot",
@@ -50,7 +50,8 @@ describe("parseMention", () => {
       defaults.issueNumber,
     );
 
-    expect(result).toBeNull();
+    expect(result).not.toBeNull();
+    expect(result!.prompt).toBe("");
   });
 
   test("is case-insensitive for the mention", () => {

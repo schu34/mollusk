@@ -1,0 +1,31 @@
+{
+  "action": "submitted",
+  "review": {
+    "id": 100,
+    "body": "@mollusk-bot this needs error handling for the edge case",
+    "state": "changes_requested",
+    "user": {
+      "login": "reviewer1"
+    }
+  },
+  "pull_request": {
+    "number": 42,
+    "title": "Add README file",
+    "head": {
+      "ref": "mollusk/issue-1-abc123"
+    }
+  },
+  "repository": {
+    "name": "testing-things",
+    "owner": {
+      "login": "hiimbex"
+    }
+  },
+  "sender": {
+    "login": "reviewer1",
+    "type": "User"
+  },
+  "installation": {
+    "id": 2
+  }
+}

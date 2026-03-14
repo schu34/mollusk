@@ -85,6 +85,20 @@ const issueCommentPayload = JSON.parse(
   ),
 );
 
+const prReviewCommentPayload = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, "fixtures/pull_request_review_comment.created.json"),
+    "utf-8",
+  ),
+);
+
+const prReviewPayload = JSON.parse(
+  fs.readFileSync(
+    path.join(__dirname, "fixtures/pull_request_review.submitted.json"),
+    "utf-8",
+  ),
+);
+
 describe("mollusk", () => {
   let probot: any;
 
@@ -102,18 +116,43 @@ describe("mollusk", () => {
     probot.load(myProbotApp);
   });
 
-  test("creates a comment when an issue is opened", async () => {
+  test("starts a job when bot is mentioned in issue body", async () => {
     const mock = nock("https://api.github.com")
       .post("/app/installations/2/access_tokens")
       .reply(200, { token: "test", permissions: { issues: "write" } })
       .post("/repos/hiimbex/testing-things/issues/1/comments", (body: any) => {
-        expect(body).toMatchObject({ body: "Thanks for opening this issue!" });
+        expect(body.body).toContain("@hiimbex");
+        expect(body.body).toContain("I'm on it");
         return true;
       })
       .reply(200);
 
     await probot.receive({ name: "issues", payload: issuesOpenedPayload });
     expect(mock.pendingMocks()).toStrictEqual([]);
+
+    const mockAdd = getAgentQueue().add as ReturnType<typeof vi.fn>;
+    expect(mockAdd).toHaveBeenCalledWith(
+      "hiimbex/testing-things#1",
+      {
+        owner: "hiimbex",
+        repo: "testing-things",
+        type: "issue",
+        issueNumber: 1,
+        sender: "hiimbex",
+        prompt: "please add a README file",
+        installationId: 2,
+      },
+    );
+  });
+
+  test("ignores issues without bot mention in body", async () => {
+    const noMentionPayload = {
+      ...issuesOpenedPayload,
+      issue: { ...issuesOpenedPayload.issue, body: "just a regular issue" },
+    };
+
+    // No nock mocks — if it tries to call the API, nock will throw
+    await probot.receive({ name: "issues", payload: noMentionPayload });
   });
 
   test("posts acknowledgment when bot is mentioned in issue comment", async () => {
@@ -139,12 +178,91 @@ describe("mollusk", () => {
       {
         owner: "hiimbex",
         repo: "testing-things",
+        type: "issue",
         issueNumber: 1,
         sender: "hiimbex",
         prompt: "please add a README file",
         installationId: 2,
       },
     );
+  });
+
+  test("starts a PR review job when bot is mentioned in review comment", async () => {
+    const mock = nock("https://api.github.com")
+      .post("/app/installations/2/access_tokens")
+      .reply(200, { token: "test", permissions: { issues: "write" } })
+      .post("/repos/hiimbex/testing-things/pulls/42/comments/1/replies", (body: any) => {
+        expect(body.body).toContain("@reviewer1");
+        expect(body.body).toContain("I'm on it");
+        return true;
+      })
+      .reply(200);
+
+    await probot.receive({
+      name: "pull_request_review_comment",
+      payload: prReviewCommentPayload,
+    });
+    expect(mock.pendingMocks()).toStrictEqual([]);
+
+    const mockAdd = getAgentQueue().add as ReturnType<typeof vi.fn>;
+    expect(mockAdd).toHaveBeenCalledWith(
+      "hiimbex/testing-things#42",
+      {
+        type: "pr_review",
+        owner: "hiimbex",
+        repo: "testing-things",
+        prNumber: 42,
+        prBranch: "mollusk/issue-1-abc123",
+        sender: "reviewer1",
+        prompt: "please fix the typo on line 5",
+        installationId: 2,
+      },
+    );
+  });
+
+  test("starts a PR review job when bot is mentioned in review submission", async () => {
+    const mock = nock("https://api.github.com")
+      .post("/app/installations/2/access_tokens")
+      .reply(200, { token: "test", permissions: { issues: "write" } })
+      .post("/repos/hiimbex/testing-things/issues/42/comments", (body: any) => {
+        expect(body.body).toContain("@reviewer1");
+        expect(body.body).toContain("I'm on it");
+        return true;
+      })
+      .reply(200);
+
+    await probot.receive({
+      name: "pull_request_review",
+      payload: prReviewPayload,
+    });
+    expect(mock.pendingMocks()).toStrictEqual([]);
+
+    const mockAdd = getAgentQueue().add as ReturnType<typeof vi.fn>;
+    expect(mockAdd).toHaveBeenCalledWith(
+      "hiimbex/testing-things#42",
+      {
+        type: "pr_review",
+        owner: "hiimbex",
+        repo: "testing-things",
+        prNumber: 42,
+        prBranch: "mollusk/issue-1-abc123",
+        sender: "reviewer1",
+        prompt: "this needs error handling for the edge case",
+        installationId: 2,
+      },
+    );
+  });
+
+  test("ignores PR reviews without a body", async () => {
+    const noBodyPayload = {
+      ...prReviewPayload,
+      review: { ...prReviewPayload.review, body: null },
+    };
+
+    await probot.receive({
+      name: "pull_request_review",
+      payload: noBodyPayload,
+    });
   });
 
   test("ignores issue comments that do not mention the bot", async () => {
